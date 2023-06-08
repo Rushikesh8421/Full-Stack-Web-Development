@@ -2,6 +2,7 @@
 
 const express = require("express");
 const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 const ejs = require("ejs");
 const _ = require("lodash");
 
@@ -16,11 +17,70 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-let posts = [];
+main().catch(err => console.log(err));
+
+async function main() {
+  await mongoose.connect('mongodb://127.0.0.1:27017/blogPost');
+
+  // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
+}
+
+const blogSchema = new mongoose.Schema({
+  title: String,
+  content: String
+});
+
+const Blog = mongoose.model('Blog', blogSchema);
+
+// const silence = new Blog({ title: 'Silence',content:'Hello World how are you' });
+// console.log(silence.title);
+
+
+// let posts = [];
 
 app.get('/',(req,res)=>{
-  res.render("home",{home: homeStartingContent,postArr:posts});
+  Blog.find({})
+  .then(blogs => {
+    res.render("home", {
+      home: homeStartingContent,
+      postArr: blogs
+    });
+  })
+  .catch(err => {
+    console.log(err);
+  });
+
+});
+  
+app.get("/compose",(req,res)=>{
+  res.render("compose");
 })
+
+app.post("/compose", (req, res) => {
+  const post = new Blog({
+    title: req.body.postTitle,
+    content: req.body.postBody  
+  });
+
+  post.save()
+    .then(() => {
+      res.redirect("/");
+    })
+    .catch(err => {
+      console.log(err);
+    });
+});
+
+
+app.get('/posts/:postId',async (req,res)=>{
+  let requestedPostId = req.params.postId;
+  const blog = await Blog.findOne({ _id: requestedPostId });
+  res.render("post", {
+    postTitle: blog.title,
+    postBody: blog.content
+});
+
+});
 
 app.get("/about",(req,res)=>{
   res.render("about",{about: aboutContent});
@@ -30,40 +90,9 @@ app.get("/contact",(req,res)=>{
   res.render("contact",{contact: contactContent});
 })
 
-app.get("/compose",(req,res)=>{
-  res.render("compose");
-})
-
-app.post("/compose",(req,res)=>{
-  var post = {
-    "title":req.body.postTitle,
-    "post":req.body.postBody
-  };
-
-  posts.push(post);
-  res.redirect("/");
-
-});
-
-app.get('/posts/:postName',(req,res)=>{
-  let requestedElement = _.lowerCase(req.params.postName);
-  posts.forEach(function(element){
-    let storedElement = _.lowerCase(element.title);
-    if(requestedElement === storedElement){
-      res.render("post",{postTitle: element.title,postBody: element.post}); 
-    }
-  });
-});
 
 
-
-
-
-
-
-
-
-
+  // posts.push(post);
 app.listen(3000, function() {
   console.log("Server started on port 3000");
 });

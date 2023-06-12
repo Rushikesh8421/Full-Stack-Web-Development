@@ -1,3 +1,5 @@
 d0be79066f7953e034b597588f0b70d3
 
+https://api.themoviedb.org/3/movie/550?api_key=d0be79066f7953e034b597588f0b70d3
+
 BaseURL: https://api.themoviedb.org/3/
